@@ -1,9 +1,11 @@
+import RankingPage from './components/RankingPage'
+
 function App() {
-  return (
-    <div>
-      <h1>Keepa Viewer</h1>
-    </div>
-  )
+ return (
+   <div>
+     <RankingPage />
+   </div>
+ )
 }
 
 export default App
