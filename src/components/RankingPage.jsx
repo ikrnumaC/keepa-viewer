@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react'
 
 // 価格表示のフォーマット関数
 const formatPrice = (price) => {
-  if (price === -1) {
+  if (price === '-1' || price === -1) {  // 文字列とNumberの両方に対応
     return <span className="text-red-500 font-bold">在庫なし</span>;
   }
-  return <span>¥{price.toLocaleString()}</span>;
+  return <span>¥{Number(price).toLocaleString()}</span>;  // 文字列を数値に変換
 }
 
 // 在庫数の表示フォーマット関数
 const formatStock = (count) => {
-  if (count === -1) {
+  if (count === '-1' || count === -1) {  // 文字列とNumberの両方に対応
     return <span className="text-red-500 font-bold">在庫なし</span>;
   }
   return <span>{count.toString()}</span>;
@@ -18,14 +18,14 @@ const formatStock = (count) => {
 
 // ランキング変動の表示コンポーネント
 const RankingChange = ({ change }) => {
-  if (change === 0 || change === -1) return null;
+  if (change === 0 || change === -1 || change === '-1') return null;
   
-  const isUp = change < 0; // ランキングは数値が小さいほど上位
+  const isUp = Number(change) < 0; // ランキングは数値が小さいほど上位
   const className = `ml-2 ${isUp ? 'text-red-500' : 'text-blue-500'}`;
   const symbol = isUp ? '↑' : '↓';
   return (
     <span className={className}>
-      {symbol}{Math.abs(change)}
+      {symbol}{Math.abs(Number(change))}
     </span>
   );
 }
@@ -37,7 +37,6 @@ const RankingPage = () => {
   const [previousKeys, setPreviousKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
   const fetchProducts = async (useLastKey = null) => {
     try {
       setIsLoading(true);
@@ -52,7 +51,9 @@ const RankingPage = () => {
       const parsedData = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
       
       // ランキング順（昇順）でソート
-      const sortedItems = (parsedData?.items || []).sort((a, b) => a.ranking - b.ranking);
+      const sortedItems = (parsedData?.items || []).sort((a, b) => Number(a.ranking) - Number(b.ranking));
+      console.log('API Response:', parsedData); // デバッグ用
+      console.log('Sorted Products:', sortedItems); // デバッグ用
       setProducts(sortedItems);
       
       if (parsedData?.last_evaluated_key) {
@@ -91,7 +92,6 @@ const RankingPage = () => {
       setCurrentPage(prev => prev - 1);
     }
   };
-
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">商品ランキング</h1>
@@ -129,14 +129,14 @@ const RankingPage = () => {
                     <RankingChange change={product.ranking_change} />
                   </p>
                   <p className="mb-1">
-                    新品価格: <span className="font-bold">{formatPrice(product.new_price)}</span>
-                    {product.new_price_change > 0 && (
+                    新品価格: {formatPrice(product.new_price)}
+                    {Number(product.new_price_change) > 0 && (
                       <span className="ml-2 text-red-500">+{product.new_price_change}</span>
                     )}
                   </p>
                   <p className="mb-1">
-                    中古価格: <span className="font-bold">{formatPrice(product.used_price)}</span>
-                    {product.used_price_change > 0 && (
+                    中古価格: {formatPrice(product.used_price)}
+                    {Number(product.used_price_change) > 0 && (
                       <span className="ml-2 text-red-500">+{product.used_price_change}</span>
                     )}
                   </p>
