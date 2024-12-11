@@ -140,7 +140,14 @@ const RankingPage = () => {
              <div className="grid grid-cols-5 gap-4">
                {/* 商品画像 (一時的にプレースホルダーとして) */}
                <div className="flex items-center justify-center bg-gray-100 p-4">
-                 <span className="text-gray-500">No Image</span>
+                 <a 
+                   href={`https://www.amazon.co.jp/dp/${product.asin}?&linkCode=ll1&tag=girlschanne07-22`}
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="hover:opacity-80 transition-opacity"
+                 >
+                   <span className="text-gray-500">No Image</span>
+                 </a>
                </div>
 
                {/* Keepaグラフ */}
@@ -156,7 +163,7 @@ const RankingPage = () => {
                <div className="col-span-3">
                  {/* 商品名 */}
                  <a 
-                   href={`https://www.amazon.co.jp/dp/${product.asin}`} 
+                   href={`https://www.amazon.co.jp/dp/${product.asin}?&linkCode=ll1&tag=girlschanne07-22`}
                    target="_blank" 
                    rel="noopener noreferrer"
                    className="font-bold text-lg mb-4 block hover:text-blue-600"
