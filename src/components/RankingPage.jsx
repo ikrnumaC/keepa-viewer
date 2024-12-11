@@ -69,8 +69,6 @@ const RankingPage = () => {
      
      // ランキング順（昇順）でソート
      const sortedItems = (parsedData?.items || []).sort((a, b) => Number(a.ranking) - Number(b.ranking));
-     console.log('API Response:', parsedData);
-     console.log('Sorted Products:', sortedItems);
      setProducts(sortedItems);
      
      if (parsedData?.last_evaluated_key) {
@@ -139,25 +137,81 @@ const RankingPage = () => {
        ) : (
          products.map((product) => (
            <div key={product.asin} className="border rounded p-4 shadow-sm hover:shadow-md transition-shadow">
-             <h2 className="font-bold text-lg mb-2">{product.title}</h2>
-             <div className="grid grid-cols-2 gap-4">
-               <div>
-                 <p className="mb-1">
-                   ランキング: <span className="font-bold">{product.ranking}</span>
-                   <RankingChange change={product.ranking_change} />
-                 </p>
-                 <p className="mb-1">
-                   新品価格: {formatPrice(product.new_price)}
-                   <PriceChange change={product.new_price_change} />
-                 </p>
-                 <p className="mb-1">
-                   中古価格: {formatPrice(product.used_price)}
-                   <PriceChange change={product.used_price_change} />
-                 </p>
+             <div className="grid grid-cols-5 gap-4">
+               {/* 商品画像 */}
+               <div className="flex items-center justify-center">
+                 <a 
+                   href={`https://www.amazon.co.jp/dp/${product.asin}`} 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="hover:opacity-80 transition-opacity"
+                 >
+                   <img 
+                     src={`https://images-na.ssl-images-amazon.com/images/P/${product.asin}.jpg`}
+                     alt={product.title}
+                     className="max-w-full h-auto"
+                   />
+                 </a>
                </div>
-               <div>
-                 <p className="mb-1">新品出品数: {formatStock(product.new_count)}</p>
-                 <p className="mb-1">中古出品数: {formatStock(product.used_count)}</p>
+
+               {/* Keepaグラフ */}
+               <div className="flex items-center justify-center">
+                 <iframe
+                   src={`https://keepa.com/iframe_addon.html#0-0-${product.asin}`}
+                   className="w-full h-48"
+                   frameBorder="0"
+                 ></iframe>
+               </div>
+
+               {/* 商品情報 */}
+               <div className="col-span-3">
+                 {/* 商品名 */}
+                 <a 
+                   href={`https://www.amazon.co.jp/dp/${product.asin}`} 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="font-bold text-lg mb-4 block hover:text-blue-600"
+                 >
+                   {product.title}
+                 </a>
+
+                 {/* 商品データ */}
+                 <div className="grid grid-cols-3 gap-4 mt-4">
+                   {/* ランキング */}
+                   <div>
+                     <p className="font-semibold">ランキング</p>
+                     <p className="mt-1">
+                       <span className="text-xl">{product.ranking}</span>
+                       <RankingChange change={product.ranking_change} />
+                     </p>
+                   </div>
+
+                   {/* 新品価格 */}
+                   <div>
+                     <p className="font-semibold">新品価格</p>
+                     <p className="mt-1">
+                       <span className="text-xl">{formatPrice(product.new_price)}</span>
+                       <PriceChange change={product.new_price_change} />
+                     </p>
+                     <p className="mt-1">
+                       出品数: <span className="font-bold">{formatStock(product.new_count)}</span>
+                       <PriceChange change={product.new_count_change} />
+                     </p>
+                   </div>
+
+                   {/* 中古価格 */}
+                   <div>
+                     <p className="font-semibold">中古価格</p>
+                     <p className="mt-1">
+                       <span className="text-xl">{formatPrice(product.used_price)}</span>
+                       <PriceChange change={product.used_price_change} />
+                     </p>
+                     <p className="mt-1">
+                       出品数: <span className="font-bold">{formatStock(product.used_count)}</span>
+                       <PriceChange change={product.used_count_change} />
+                     </p>
+                   </div>
+                 </div>
                </div>
              </div>
            </div>
