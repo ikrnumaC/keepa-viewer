@@ -146,7 +146,7 @@ const RankingPage = () => {
                {/* Keepaグラフ */}
                <div className="flex items-center justify-center">
                  <img 
-                   src={`https://graph.keepa.com/pricehistory.png?asin=${product.asin}&domain=co.jp&new=1&used=1&salesrank=1&bb=1&fbm=1&range=31&width=300&height=150`}
+                   src={`https://graph.keepa.com/pricehistory.png?asin=${product.asin}&domain=co.jp&new=1&used=1&salesrank=1&bb=1&fbm=1&range=31&width=450&height=150`}
                    alt="Price History Graph"
                    className="w-full h-auto"
                  />
