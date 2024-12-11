@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import RankingPage from './components/RankingPage';
 import RankingUpPage from './components/RankingUpPage';
+import NewPriceUpPage from './components/NewPriceUpPage';
 // 他のインポートは後で追加
-// import NewPriceUpPage from './components/NewPriceUpPage';
 // import UsedPriceUpPage from './components/UsedPriceUpPage';
 // import OutOfStockPage from './components/OutOfStockPage';
 
