@@ -2,9 +2,6 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import RankingPage from './components/RankingPage';
 import RankingUpPage from './components/RankingUpPage';
 import NewPriceUpPage from './components/NewPriceUpPage';
-// 他のインポートは後で追加
-// import UsedPriceUpPage from './components/UsedPriceUpPage';
-// import OutOfStockPage from './components/OutOfStockPage';
 
 function App() {
   return (
@@ -28,13 +25,10 @@ function App() {
           </Link>
         </div>
       </nav>
-
       <Routes>
         <Route path="/" element={<RankingPage />} />
         <Route path="/ranking-up" element={<RankingUpPage />} />
         <Route path="/new-price-up" element={<NewPriceUpPage />} />
-        <Route path="/used-price-up" element={<UsedPriceUpPage />} />
-        <Route path="/out-of-stock" element={<OutOfStockPage />} />
       </Routes>
     </BrowserRouter>
   );
