@@ -57,23 +57,13 @@ const RankingPage = () => {
   const [previousKeys, setPreviousKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState(null);
 
-  const handlePageSizeChange = (newSize) => {
-    setPageSize(newSize);
-    // URLパラメータをリセット
-    const searchParams = new URLSearchParams();
-    searchParams.set('page_size', newSize.toString());
-    // LastEvaluatedKeyとページ情報をリセット
-    setLastEvaluatedKey(null);
-    setPreviousKeys([]);
-    setCurrentPage(1);
-    // 新しいURLで遷移
-    navigate(`${location.pathname}?${searchParams.toString()}`);
-  };
-
+  // データ取得関数
   const fetchProducts = async (useLastKey = null) => {
     try {
       setIsLoading(true);
+      setError(null);
       
       // URLのクエリパラメータを構築
       const searchParams = new URLSearchParams();
@@ -87,6 +77,11 @@ const RankingPage = () => {
       const url = new URL(baseUrl);
       url.search = searchParams.toString();
       
+      console.log('Fetching products with params:', {
+        page_size: pageSize,
+        last_evaluated_key: useLastKey
+      });
+      
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -95,10 +90,11 @@ const RankingPage = () => {
       const data = await response.json();
       const parsedData = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
       
+      console.log('Received data:', parsedData);
+      
       // データを設定
       if (parsedData?.items) {
-        const sortedItems = parsedData.items.sort((a, b) => Number(a.ranking) - Number(b.ranking));
-        setProducts(sortedItems);
+        setProducts(parsedData.items);
       }
       
       // LastEvaluatedKeyを設定
@@ -109,12 +105,28 @@ const RankingPage = () => {
       }
     } catch (error) {
       console.error('Error fetching products:', error);
+      setError('データの取得中にエラーが発生しました。');
       setProducts([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ページサイズ変更のハンドラ
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    // URLパラメータをリセット
+    const searchParams = new URLSearchParams();
+    searchParams.set('page_size', newSize.toString());
+    // LastEvaluatedKeyとページ情報をリセット
+    setLastEvaluatedKey(null);
+    setPreviousKeys([]);
+    setCurrentPage(1);
+    // 新しいURLで遷移
+    navigate(`${location.pathname}?${searchParams.toString()}`);
+  };
+
+  // URL変更時の処理
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const pageSizeParam = searchParams.get('page_size');
@@ -139,14 +151,16 @@ const RankingPage = () => {
     fetchProducts(parsedKey);
   }, [location.search]);
 
+  // 次のページへの遷移
   const handleNextPage = () => {
     if (lastEvaluatedKey) {
-      // 現在の先頭商品のキー情報を保存
-      setPreviousKeys([...previousKeys, {
+      // 現在の状態を保存
+      const currentKey = {
         is_active: 1,
         ranking: products[0]?.ranking,
         asin: products[0]?.asin
-      }]);
+      };
+      setPreviousKeys([...previousKeys, currentKey]);
 
       // URLパラメータを更新
       const searchParams = new URLSearchParams();
@@ -159,6 +173,7 @@ const RankingPage = () => {
     }
   };
 
+  // 前のページへの遷移
   const handlePrevPage = () => {
     if (previousKeys.length > 0) {
       const newPreviousKeys = [...previousKeys];
@@ -198,6 +213,12 @@ const RankingPage = () => {
       {isLoading && (
         <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      )}
+
+      {error && (
+        <div className="text-red-500 text-center py-4">
+          {error}
         </div>
       )}
 
@@ -292,7 +313,7 @@ const RankingPage = () => {
         <button 
           className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-white"
           onClick={handleNextPage}
-          disabled={!lastEvaluatedKey}
+          disabled={!lastEvaluatedKey || isLoading}
         >
           次へ &gt;
         </button>
