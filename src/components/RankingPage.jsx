@@ -59,27 +59,40 @@ const RankingPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState(null);
 
+  // URLからクエリパラメータを取得する関数
+  const getQueryParams = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const pageSizeParam = searchParams.get('page_size');
+    const lastEvaluatedKeyParam = searchParams.get('last_evaluated_key');
+    
+    return {
+      pageSize: pageSizeParam ? Number(pageSizeParam) : 20,
+      lastEvaluatedKey: lastEvaluatedKeyParam ? JSON.parse(lastEvaluatedKeyParam) : null
+    };
+  };
+
   // データ取得関数
-  const fetchProducts = async (useLastKey = null) => {
+  const fetchProducts = async (params = {}) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // URLのクエリパラメータを構築
       const searchParams = new URLSearchParams();
-      searchParams.set('page_size', pageSize);
-      if (useLastKey) {
-        searchParams.set('last_evaluated_key', JSON.stringify(useLastKey));
+      searchParams.set('page_size', params.pageSize || pageSize);
+      
+      if (params.lastEvaluatedKey) {
+        searchParams.set('last_evaluated_key', JSON.stringify(params.lastEvaluatedKey));
       }
       
-      // APIリクエストを実行
       const baseUrl = 'https://yh546hgz2b.execute-api.ap-southeast-2.amazonaws.com/prod/products/ranking';
-      const url = new URL(baseUrl);
-      url.search = searchParams.toString();
+      const url = `${baseUrl}?${searchParams.toString()}`;
       
-      console.log('Fetching products with params:', {
-        page_size: pageSize,
-        last_evaluated_key: useLastKey
+      console.log('Fetching products:', {
+        url,
+        params: {
+          page_size: params.pageSize || pageSize,
+          last_evaluated_key: params.lastEvaluatedKey
+        }
       });
       
       const response = await fetch(url);
@@ -92,104 +105,81 @@ const RankingPage = () => {
       
       console.log('Received data:', parsedData);
       
-      // データを設定
       if (parsedData?.items) {
         setProducts(parsedData.items);
+        setLastEvaluatedKey(parsedData.last_evaluated_key || null);
+        return parsedData.last_evaluated_key;
       }
+      return null;
       
-      // LastEvaluatedKeyを設定
-      if (parsedData?.last_evaluated_key) {
-        setLastEvaluatedKey(parsedData.last_evaluated_key);
-      } else {
-        setLastEvaluatedKey(null);
-      }
     } catch (error) {
       console.error('Error fetching products:', error);
       setError('データの取得中にエラーが発生しました。');
       setProducts([]);
+      setLastEvaluatedKey(null);
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
+  // URLの変更を監視
+  useEffect(() => {
+    const params = getQueryParams();
+    if (params.pageSize !== pageSize) {
+      setPageSize(params.pageSize);
+    }
+    fetchProducts(params);
+  }, [location.search]);
+
   // ページサイズ変更のハンドラ
-  const handlePageSizeChange = (newSize) => {
+  const handlePageSizeChange = async (newSize) => {
     setPageSize(newSize);
-    // URLパラメータをリセット
-    const searchParams = new URLSearchParams();
-    searchParams.set('page_size', newSize.toString());
-    // LastEvaluatedKeyとページ情報をリセット
-    setLastEvaluatedKey(null);
     setPreviousKeys([]);
     setCurrentPage(1);
-    // 新しいURLで遷移
+    
+    const searchParams = new URLSearchParams();
+    searchParams.set('page_size', newSize.toString());
+    
     navigate(`${location.pathname}?${searchParams.toString()}`);
   };
 
-  // URL変更時の処理
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const pageSizeParam = searchParams.get('page_size');
-    const lastEvaluatedKeyParam = searchParams.get('last_evaluated_key');
-    
-    // pageSize の更新
-    const newPageSize = pageSizeParam ? Number(pageSizeParam) : 20;
-    if (newPageSize !== pageSize) {
-      setPageSize(newPageSize);
-    }
-
-    // LastEvaluatedKey の更新
-    let parsedKey = null;
-    try {
-      if (lastEvaluatedKeyParam) {
-        parsedKey = JSON.parse(lastEvaluatedKeyParam);
-      }
-    } catch (error) {
-      console.error('Invalid last_evaluated_key:', error);
-    }
-    
-    fetchProducts(parsedKey);
-  }, [location.search]);
-
   // 次のページへの遷移
-  const handleNextPage = () => {
-    if (lastEvaluatedKey) {
-      // 現在の状態を保存
+  const handleNextPage = async () => {
+    if (lastEvaluatedKey && !isLoading) {
       const currentKey = {
-        is_active: 1,
-        ranking: products[0]?.ranking,
-        asin: products[0]?.asin
+        is_active: '1',
+        ranking: lastEvaluatedKey.ranking,
+        asin: lastEvaluatedKey.asin
       };
-      setPreviousKeys([...previousKeys, currentKey]);
-
-      // URLパラメータを更新
+      
       const searchParams = new URLSearchParams();
       searchParams.set('page_size', pageSize.toString());
-      searchParams.set('last_evaluated_key', JSON.stringify(lastEvaluatedKey));
-
-      // 新しいURLで遷移
-      navigate(`${location.pathname}?${searchParams.toString()}`);
+      searchParams.set('last_evaluated_key', JSON.stringify(currentKey));
+      
+      setPreviousKeys([...previousKeys, currentKey]);
       setCurrentPage(prev => prev + 1);
+      
+      navigate(`${location.pathname}?${searchParams.toString()}`);
     }
   };
 
   // 前のページへの遷移
   const handlePrevPage = () => {
-    if (previousKeys.length > 0) {
+    if (previousKeys.length > 0 && !isLoading) {
       const newPreviousKeys = [...previousKeys];
       const lastKey = newPreviousKeys.pop();
       setPreviousKeys(newPreviousKeys);
       
       const searchParams = new URLSearchParams();
       searchParams.set('page_size', pageSize.toString());
+      
       if (lastKey) {
         searchParams.set('last_evaluated_key', JSON.stringify(lastKey));
-      } else {
-        searchParams.delete('last_evaluated_key');
       }
       
-      navigate(`${location.pathname}?${searchParams.toString()}`);
       setCurrentPage(prev => prev - 1);
+      navigate(`${location.pathname}?${searchParams.toString()}`);
     }
   };
 
@@ -202,6 +192,7 @@ const RankingPage = () => {
           className="border p-2 rounded"
           value={pageSize}
           onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+          disabled={isLoading}
         >
           <option value={20}>20件表示</option>
           <option value={50}>50件表示</option>
@@ -306,7 +297,7 @@ const RankingPage = () => {
         <button 
           className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-white"
           onClick={handlePrevPage}
-          disabled={currentPage === 1}
+          disabled={currentPage === 1 || isLoading}
         >
           &lt; 前へ
         </button>
