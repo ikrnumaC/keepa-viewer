@@ -99,7 +99,7 @@ const RankingPage = () => {
 
  const handleNextPage = () => {
    if (lastEvaluatedKey) {
-     setPreviousKeys([...previousKeys, products[0]?.asin]);
+     setPreviousKeys([...previousKeys, lastEvaluatedKey]);
      fetchProducts(lastEvaluatedKey);
      setCurrentPage(prev => prev + 1);
    }
