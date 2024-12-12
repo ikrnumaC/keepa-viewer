@@ -58,130 +58,110 @@ const RankingPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState(null);
-
-  // URLからクエリパラメータを取得する関数
-  const getQueryParams = () => {
-    const searchParams = new URLSearchParams(location.search);
-    const pageSizeParam = searchParams.get('page_size');
-    const lastEvaluatedKeyParam = searchParams.get('last_evaluated_key');
-    
-    return {
-      pageSize: pageSizeParam ? Number(pageSizeParam) : 20,
-      lastEvaluatedKey: lastEvaluatedKeyParam ? JSON.parse(lastEvaluatedKeyParam) : null
-    };
-  };
+  const [hasMoreData, setHasMoreData] = useState(true);
 
   // データ取得関数
-  const fetchProducts = async (params = {}) => {
+  const fetchProducts = async (lastKey = null, newPageSize = pageSize) => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const searchParams = new URLSearchParams();
-      searchParams.set('page_size', params.pageSize || pageSize);
-      
-      if (params.lastEvaluatedKey) {
-        searchParams.set('last_evaluated_key', JSON.stringify(params.lastEvaluatedKey));
+      searchParams.set('page_size', newPageSize.toString());
+      if (lastKey) {
+        searchParams.set('last_evaluated_key', JSON.stringify(lastKey));
       }
-      
+
       const baseUrl = 'https://yh546hgz2b.execute-api.ap-southeast-2.amazonaws.com/prod/products/ranking';
       const url = `${baseUrl}?${searchParams.toString()}`;
-      
-      console.log('Fetching products:', {
-        url,
-        params: {
-          page_size: params.pageSize || pageSize,
-          last_evaluated_key: params.lastEvaluatedKey
-        }
-      });
-      
+
+      console.log('Fetching products:', { url, lastKey, pageSize: newPageSize });
+
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       const parsedData = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
-      
+
       console.log('Received data:', parsedData);
-      
+
       if (parsedData?.items) {
         setProducts(parsedData.items);
         setLastEvaluatedKey(parsedData.last_evaluated_key || null);
-        return parsedData.last_evaluated_key;
+        setHasMoreData(!!parsedData.last_evaluated_key);
+        return true;
       }
-      return null;
-      
+      return false;
     } catch (error) {
       console.error('Error fetching products:', error);
       setError('データの取得中にエラーが発生しました。');
       setProducts([]);
       setLastEvaluatedKey(null);
-      return null;
+      setHasMoreData(false);
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // URLの変更を監視
-  useEffect(() => {
-    const params = getQueryParams();
-    if (params.pageSize !== pageSize) {
-      setPageSize(params.pageSize);
-    }
-    fetchProducts(params);
-  }, [location.search]);
-
   // ページサイズ変更のハンドラ
   const handlePageSizeChange = async (newSize) => {
-    setPageSize(newSize);
-    setPreviousKeys([]);
-    setCurrentPage(1);
-    
-    const searchParams = new URLSearchParams();
-    searchParams.set('page_size', newSize.toString());
-    
-    navigate(`${location.pathname}?${searchParams.toString()}`);
+    if (newSize !== pageSize) {
+      setPageSize(newSize);
+      setPreviousKeys([]);
+      setCurrentPage(1);
+      await fetchProducts(null, newSize);
+      navigate(`${location.pathname}?page_size=${newSize}`);
+    }
   };
 
   // 次のページへの遷移
   const handleNextPage = async () => {
     if (lastEvaluatedKey && !isLoading) {
-      const currentKey = {
-        is_active: '1',
-        ranking: lastEvaluatedKey.ranking,
-        asin: lastEvaluatedKey.asin
-      };
-      
-      const searchParams = new URLSearchParams();
-      searchParams.set('page_size', pageSize.toString());
-      searchParams.set('last_evaluated_key', JSON.stringify(currentKey));
-      
-      setPreviousKeys([...previousKeys, currentKey]);
-      setCurrentPage(prev => prev + 1);
-      
-      navigate(`${location.pathname}?${searchParams.toString()}`);
+      // 現在のページの状態を保存
+      setPreviousKeys(prev => [...prev, {
+        data: products,
+        key: lastEvaluatedKey,
+        scrollPosition: window.scrollY
+      }]);
+
+      // 次のページのデータを取得
+      const success = await fetchProducts(lastEvaluatedKey);
+      if (success) {
+        setCurrentPage(prev => prev + 1);
+        window.scrollTo(0, 0);
+      }
     }
   };
 
   // 前のページへの遷移
-  const handlePrevPage = () => {
+  const handlePrevPage = async () => {
     if (previousKeys.length > 0 && !isLoading) {
       const newPreviousKeys = [...previousKeys];
-      const lastKey = newPreviousKeys.pop();
+      const prevPageState = newPreviousKeys.pop();
       setPreviousKeys(newPreviousKeys);
-      
-      const searchParams = new URLSearchParams();
-      searchParams.set('page_size', pageSize.toString());
-      
-      if (lastKey) {
-        searchParams.set('last_evaluated_key', JSON.stringify(lastKey));
+
+      if (prevPageState) {
+        setProducts(prevPageState.data);
+        setLastEvaluatedKey(prevPageState.key);
+        setCurrentPage(prev => prev - 1);
+        setHasMoreData(true);
+        window.scrollTo(0, prevPageState.scrollPosition);
       }
-      
-      setCurrentPage(prev => prev - 1);
-      navigate(`${location.pathname}?${searchParams.toString()}`);
     }
   };
+
+  // 初期データの取得
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const pageSizeParam = Number(searchParams.get('page_size')) || 20;
+    if (pageSizeParam !== pageSize) {
+      setPageSize(pageSizeParam);
+    }
+    fetchProducts(null, pageSizeParam);
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -304,7 +284,7 @@ const RankingPage = () => {
         <button 
           className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-white"
           onClick={handleNextPage}
-          disabled={!lastEvaluatedKey || isLoading}
+          disabled={!hasMoreData || isLoading}
         >
           次へ &gt;
         </button>
