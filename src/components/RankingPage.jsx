@@ -50,20 +50,53 @@ const PriceChange = ({ change }) => {
 // Keepaグラフコンポーネント
 const KeepaGraph = ({ asin, index }) => {
   const [showGraph, setShowGraph] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(null);
 
   useEffect(() => {
-    // 各商品のインデックスに基づいて遅延を設定（250ミリ秒間隔）
-    const timer = setTimeout(() => {
-      setShowGraph(true);
-    }, index * 250);
+    // 100件ごとにグループ分け
+    const groupIndex = Math.floor(index / 100);
+    
+    // グループごとの基本遅延（30秒 = 30000ミリ秒）
+    const baseDelay = groupIndex * 30000;
+    
+    // グループ内での個別遅延（100件以内で分散: 約300ミリ秒ずつ）
+    const individualDelay = (index % 100) * 300;
+    
+    const totalDelay = baseDelay + individualDelay;
 
-    return () => clearTimeout(timer);
+    // 残り時間の表示用
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, totalDelay - elapsed);
+      setRemainingTime(Math.ceil(remaining / 1000));
+    }, 1000);
+
+    // グラフ表示用タイマー
+    const graphTimer = setTimeout(() => {
+      setShowGraph(true);
+      clearInterval(timer);
+      setRemainingTime(null);
+    }, totalDelay);
+
+    return () => {
+      clearTimeout(graphTimer);
+      clearInterval(timer);
+    };
   }, [index]);
 
   if (!showGraph) {
     return (
       <div className="flex items-center justify-center h-[150px] bg-gray-100">
-        <div className="animate-pulse">グラフ読み込み中...</div>
+        <div className="text-center">
+          <div className="animate-pulse mb-2">グラフ読み込み中...</div>
+          <div className="text-sm text-gray-500">
+            グループ: {Math.floor(index / 100) + 1}
+            {remainingTime !== null && (
+              <div>残り約{remainingTime}秒</div>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
