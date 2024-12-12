@@ -65,14 +65,21 @@ const RankingPage = () => {
 
      const response = await fetch(url);
      const data = await response.json();
+     console.log('API Response:', data); // デバッグ用
+
      const parsedData = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+     console.log('Parsed Data:', parsedData); // デバッグ用
      
      // ランキング順（昇順）でソート
      const sortedItems = (parsedData?.items || []).sort((a, b) => Number(a.ranking) - Number(b.ranking));
+     
+     // 新しいページを取得する場合は既存のデータを置き換え
      setProducts(sortedItems);
+     console.log('Sorted Items:', sortedItems); // デバッグ用
      
      if (parsedData?.last_evaluated_key) {
        setLastEvaluatedKey(parsedData.last_evaluated_key);
+       console.log('Next Page Token:', parsedData.last_evaluated_key); // デバッグ用
      } else {
        setLastEvaluatedKey(null);
      }
