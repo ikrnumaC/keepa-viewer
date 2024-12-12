@@ -99,7 +99,7 @@ const RankingPage = () => {
 
  const handleNextPage = () => {
    if (lastEvaluatedKey) {
-     setPreviousKeys([...previousKeys, lastEvaluatedKey]);
+     setPreviousKeys([...previousKeys, products[0]?.asin]);
      fetchProducts(lastEvaluatedKey);
      setCurrentPage(prev => prev + 1);
    }
@@ -110,7 +110,8 @@ const RankingPage = () => {
      const newPreviousKeys = [...previousKeys];
      const lastKey = newPreviousKeys.pop();
      setPreviousKeys(newPreviousKeys);
-     fetchProducts(lastKey || null);
+     const lastAsin = products.find(product => product.asin === lastKey)?.asin;
+     fetchProducts(lastAsin || null);
      setCurrentPage(prev => prev - 1);
    }
  };
