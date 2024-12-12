@@ -1,23 +1,20 @@
-import React, { useState, useEffect } from 'react'
-import { useHistory, useLocation } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { useHistory, useLocation } from 'react-router-dom';
 
-// 価格表示のフォーマット関数
 const formatPrice = (price) => {
   if (price === '-1' || price === -1) {
     return <span className="text-red-500 font-bold">在庫なし</span>;
   }
   return <span>¥{Number(price).toLocaleString()}</span>;
-}
+};
 
-// 在庫数の表示フォーマット関数
 const formatStock = (count) => {
   if (count === '-1' || count === -1) {
     return <span className="text-red-500 font-bold">在庫なし</span>;
   }
   return <span>{count.toString()}</span>;
-}
+};
 
-// ランキング変動の表示コンポーネント
 const RankingChange = ({ change }) => {
   if (change === '-1' || change === -1) return null;
   
@@ -30,9 +27,8 @@ const RankingChange = ({ change }) => {
       {symbol}{Math.abs(numChange)}
     </span>
   );
-}
+};
 
-// 価格変動の表示コンポーネント
 const PriceChange = ({ change }) => {
   if (change === '-1' || change === -1) return null;
   
@@ -45,7 +41,7 @@ const PriceChange = ({ change }) => {
       {symbol}{numChange}
     </span>
   );
-}
+};
 
 const RankingPage = () => {
   const history = useHistory();
@@ -107,41 +103,94 @@ const RankingPage = () => {
   }, [location.search]);
 
   const handleNextPage = () => {
-    if (lastEvaluatedKey) {
-      setPreviousKeys([...previousKeys, products[0]?.asin]);
-      
-      // URLを更新してから fetchProducts を呼び出す
-      const searchParams = new URLSearchParams(location.search);
-      searchParams.set('page_size', pageSize);
-      searchParams.set('last_evaluated_key', JSON.stringify(lastEvaluatedKey));
-      history.push(`${location.pathname}?${searchParams.toString()}`);
-      
-      fetchProducts(lastEvaluatedKey);
-      setCurrentPage(prev => prev + 1);
-    }
+    // 現在のクエリパラメータを取得
+    const searchParams = new URLSearchParams(location.search);
+
+    // 次のページ用のクエリパラメータを設定
+    searchParams.set('page_size', pageSize);
+    searchParams.set('last_evaluated_key', JSON.stringify(lastEvaluatedKey));
+
+    // URLを更新
+    history.push(`${location.pathname}?${searchParams.toString()}`);
+
+    // 新しいURLでfetchProductsを呼び出す
+    fetchProducts(lastEvaluatedKey);
+    setCurrentPage(prev => prev + 1);
   };
 
   const handlePrevPage = () => {
-    if (previousKeys.length > 0) {
-      const newPreviousKeys = [...previousKeys];
-      const lastKey = newPreviousKeys.pop();
-      setPreviousKeys(newPreviousKeys);
-      const lastAsin = products.find(product => product.asin === lastKey)?.asin;
-      
-      // URLを更新してから fetchProducts を呼び出す
-      const searchParams = new URLSearchParams(location.search);
-      searchParams.set('page_size', pageSize);
-      searchParams.set('last_evaluated_key', JSON.stringify(lastAsin || null));
-      history.push(`${location.pathname}?${searchParams.toString()}`);
-      
-      fetchProducts(lastAsin || null);
-      setCurrentPage(prev => prev - 1);
-    }
+    // 現在のクエリパラメータを取得
+    const searchParams = new URLSearchParams(location.search);
+
+    // 前のページ用のクエリパラメータを設定
+    searchParams.set('page_size', pageSize);
+    
+    // 前のページのAsinを取得
+    const newPreviousKeys = [...previousKeys];
+    const lastKey = newPreviousKeys.pop();
+    setPreviousKeys(newPreviousKeys);
+    const lastAsin = products.find(product => product.asin === lastKey)?.asin;
+    searchParams.set('last_evaluated_key', JSON.stringify(lastAsin || null));
+
+    // URLを更新
+    history.push(`${location.pathname}?${searchParams.toString()}`);
+
+    // 新しいURLでfetchProductsを呼び出す
+    fetchProducts(lastAsin || null);
+    setCurrentPage(prev => prev - 1);
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* ... (その他の UI 要素は省略) ... */}
+      <h1 className="text-3xl font-bold mb-6">商品ランキング</h1>
+      
+      <div className="mb-4 flex justify-between items-center">
+        <select 
+          className="border p-2 rounded"
+          value={pageSize}
+          onChange={(e) => setPageSize(Number(e.target.value))}
+        >
+          <option value={20}>20件表示</option>
+          <option value={50}>50件表示</option>
+          <option value={100}>100件表示</option>
+        </select>
+        <span className="text-gray-600">ページ: {currentPage}</span>
+      </div>
+
+      {isLoading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      )}
+
+      <div className="grid gap-4">
+        {!isLoading && products.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">商品がありません</div>
+        ) : (
+          products.map((product) => (
+            <div key={product.asin} className="border rounded p-4 shadow-sm hover:shadow-md transition-shadow">
+              {/* ... (その他の UI 要素は省略) ... */}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="mt-6 flex justify-center gap-4">
+        <button 
+          className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-white"
+          onClick={handlePrevPage}
+          disabled={currentPage === 1}
+        >
+          &lt; 前へ
+        </button>
+        <button 
+          className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-white"
+          onClick={handleNextPage}
+          disabled={!lastEvaluatedKey}
+        >
+          次へ &gt;
+        </button>
+      </div>
     </div>
   );
 };
