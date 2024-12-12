@@ -47,6 +47,38 @@ const PriceChange = ({ change }) => {
   );
 };
 
+// Keepaグラフコンポーネント
+const KeepaGraph = ({ asin, index }) => {
+  const [showGraph, setShowGraph] = useState(false);
+
+  useEffect(() => {
+    // 各商品のインデックスに基づいて遅延を設定（250ミリ秒間隔）
+    const timer = setTimeout(() => {
+      setShowGraph(true);
+    }, index * 250);
+
+    return () => clearTimeout(timer);
+  }, [index]);
+
+  if (!showGraph) {
+    return (
+      <div className="flex items-center justify-center h-[150px] bg-gray-100">
+        <div className="animate-pulse">グラフ読み込み中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center">
+      <img 
+        src={`https://graph.keepa.com/pricehistory.png?asin=${asin}&domain=co.jp&new=1&used=1&salesrank=1&bb=1&fbm=1&range=31&width=450&height=150`}
+        alt="Price History Graph"
+        className="w-full h-auto"
+      />
+    </div>
+  );
+};
+
 const RankingPage = () => {
   const location = useLocation();
   
@@ -114,7 +146,7 @@ const RankingPage = () => {
         {!isLoading && products.length === 0 ? (
           <div className="text-center py-8 text-gray-500">商品がありません</div>
         ) : (
-          products.map((product) => (
+          products.map((product, index) => (
             <div key={product.asin} className="border rounded p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="grid grid-cols-5 gap-4">
                 {/* 商品画像 */}
@@ -130,13 +162,7 @@ const RankingPage = () => {
                 </div>
 
                 {/* Keepaグラフ */}
-                <div className="flex items-center justify-center">
-                  <img 
-                    src={`https://graph.keepa.com/pricehistory.png?asin=${product.asin}&domain=co.jp&new=1&used=1&salesrank=1&bb=1&fbm=1&range=31&width=450&height=150`}
-                    alt="Price History Graph"
-                    className="w-full h-auto"
-                  />
-                </div>
+                <KeepaGraph asin={product.asin} index={index} />
 
                 {/* 商品情報 */}
                 <div className="col-span-3">
