@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 // 価格表示のフォーマット関数
 const formatPrice = (price) => {
@@ -48,36 +48,23 @@ const PriceChange = ({ change }) => {
 };
 
 const RankingPage = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   
   const [products, setProducts] = useState([]);
-  const [pageSize, setPageSize] = useState(20);
-  const [lastEvaluatedKey, setLastEvaluatedKey] = useState(null);
-  const [previousKeys, setPreviousKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState(null);
-  const [hasMoreData, setHasMoreData] = useState(true);
 
   // データ取得関数
-  const fetchProducts = async (lastKey = null, newPageSize = pageSize) => {
+  const fetchProducts = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const searchParams = new URLSearchParams();
-      searchParams.set('page_size', newPageSize.toString());
-      if (lastKey) {
-        searchParams.set('last_evaluated_key', JSON.stringify(lastKey));
-      }
-
       const baseUrl = 'https://yh546hgz2b.execute-api.ap-southeast-2.amazonaws.com/prod/products/ranking';
-      const url = `${baseUrl}?${searchParams.toString()}`;
 
-      console.log('Fetching products:', { url, lastKey, pageSize: newPageSize });
+      console.log('Fetching products:', { url: baseUrl });
 
-      const response = await fetch(url);
+      const response = await fetch(baseUrl);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -89,8 +76,6 @@ const RankingPage = () => {
 
       if (parsedData?.items) {
         setProducts(parsedData.items);
-        setLastEvaluatedKey(parsedData.last_evaluated_key || null);
-        setHasMoreData(!!parsedData.last_evaluated_key);
         return true;
       }
       return false;
@@ -98,88 +83,20 @@ const RankingPage = () => {
       console.error('Error fetching products:', error);
       setError('データの取得中にエラーが発生しました。');
       setProducts([]);
-      setLastEvaluatedKey(null);
-      setHasMoreData(false);
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ページサイズ変更のハンドラ
-  const handlePageSizeChange = async (newSize) => {
-    if (newSize !== pageSize) {
-      setPageSize(newSize);
-      setPreviousKeys([]);
-      setCurrentPage(1);
-      await fetchProducts(null, newSize);
-      navigate(`${location.pathname}?page_size=${newSize}`);
-    }
-  };
-
-  // 次のページへの遷移
-  const handleNextPage = async () => {
-    if (lastEvaluatedKey && !isLoading) {
-      // 現在のページの状態を保存
-      setPreviousKeys(prev => [...prev, {
-        data: products,
-        key: lastEvaluatedKey,
-        scrollPosition: window.scrollY
-      }]);
-
-      // 次のページのデータを取得
-      const success = await fetchProducts(lastEvaluatedKey);
-      if (success) {
-        setCurrentPage(prev => prev + 1);
-        window.scrollTo(0, 0);
-      }
-    }
-  };
-
-  // 前のページへの遷移
-  const handlePrevPage = async () => {
-    if (previousKeys.length > 0 && !isLoading) {
-      const newPreviousKeys = [...previousKeys];
-      const prevPageState = newPreviousKeys.pop();
-      setPreviousKeys(newPreviousKeys);
-
-      if (prevPageState) {
-        setProducts(prevPageState.data);
-        setLastEvaluatedKey(prevPageState.key);
-        setCurrentPage(prev => prev - 1);
-        setHasMoreData(true);
-        window.scrollTo(0, prevPageState.scrollPosition);
-      }
-    }
-  };
-
   // 初期データの取得
   useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const pageSizeParam = Number(searchParams.get('page_size')) || 20;
-    if (pageSizeParam !== pageSize) {
-      setPageSize(pageSizeParam);
-    }
-    fetchProducts(null, pageSizeParam);
+    fetchProducts();
   }, []);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">商品ランキング</h1>
-      
-      <div className="mb-4 flex justify-between items-center">
-        <select 
-          className="border p-2 rounded"
-          value={pageSize}
-          onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-          disabled={isLoading}
-        >
-          <option value={20}>20件表示</option>
-          <option value={50}>50件表示</option>
-          <option value={100}>100件表示</option>
-        </select>
-        <span className="text-gray-600">ページ: {currentPage}</span>
-      </div>
 
       {isLoading && (
         <div className="flex justify-center items-center py-8">
@@ -271,23 +188,6 @@ const RankingPage = () => {
             </div>
           ))
         )}
-      </div>
-
-      <div className="mt-6 flex justify-center gap-4">
-        <button 
-          className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-white"
-          onClick={handlePrevPage}
-          disabled={currentPage === 1 || isLoading}
-        >
-          &lt; 前へ
-        </button>
-        <button 
-          className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-white"
-          onClick={handleNextPage}
-          disabled={!hasMoreData || isLoading}
-        >
-          次へ &gt;
-        </button>
       </div>
     </div>
   );
