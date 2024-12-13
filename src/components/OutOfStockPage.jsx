@@ -77,7 +77,7 @@ const KeepaGraph = ({ asin, index, isEnabled = false }) => {
   );
 };
 
-const AllOutOfStockPage = () => {
+const OutOfStockPage = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -89,22 +89,31 @@ const AllOutOfStockPage = () => {
       setIsLoading(true);
       setError(null);
 
-      const baseUrl = 'https://yh546hgz2b.execute-api.ap-southeast-2.amazonaws.com/prod/products/all-out-of-stock';
+      const baseUrl = 'https://yh546hgz2b.execute-api.ap-southeast-2.amazonaws.com/prod/products/out-of-stock';
+
+      console.log('Fetching from:', baseUrl);
 
       const response = await fetch(baseUrl);
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('Raw data:', data);
+
       const parsedData = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+      console.log('Parsed data:', parsedData);
       
       // ランキング順（昇順）でソート
       const sortedItems = (parsedData?.items || []).sort((a, b) => Number(a.ranking) - Number(b.ranking));
+      console.log('Sorted items:', sortedItems);
+
       setProducts(sortedItems);
       return true;
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Detailed error:', error);
       setError('データの取得中にエラーが発生しました。');
       setProducts([]);
       return false;
@@ -252,4 +261,4 @@ const AllOutOfStockPage = () => {
   );
 };
 
-export default AllOutOfStockPage;
+export default OutOfStockPage;
