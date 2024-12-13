@@ -77,7 +77,7 @@ const KeepaGraph = ({ asin, index, isEnabled = false }) => {
   );
 };
 
-const NewPriceUpPage = () => {
+const UsedPriceUpPage = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -89,7 +89,7 @@ const NewPriceUpPage = () => {
       setIsLoading(true);
       setError(null);
 
-      const baseUrl = 'https://yh546hgz2b.execute-api.ap-southeast-2.amazonaws.com/prod/products/new-price-up';
+      const baseUrl = 'https://yh546hgz2b.execute-api.ap-southeast-2.amazonaws.com/prod/products/used-price-up';
 
       const response = await fetch(baseUrl);
       if (!response.ok) {
@@ -144,7 +144,7 @@ const NewPriceUpPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">新品価格上昇商品</h1>
+      <h1 className="text-3xl font-bold mb-6">中古価格上昇商品</h1>
 
       {isLoading && (
         <div className="flex justify-center items-center py-8">
@@ -252,4 +252,4 @@ const NewPriceUpPage = () => {
   );
 };
 
-export default NewPriceUpPage;
+export default UsedPriceUpPage;
