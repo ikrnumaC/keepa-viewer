@@ -6,7 +6,7 @@ import UsedPriceUpPage from './components/UsedPriceUpPage';
 import OutOfStockPage from './components/OutOfStockPage'; // すべて在庫切れ用
 import NewOutOfStockPage from './components/NewOutOfStockPage'; // 新品在庫切れ用
 import UsedOutOfStockPage from './components/UsedOutOfStockPage'; // 中古在庫切れ用
-import Terms from './components/Terms';
+import TermsPage from './components/TermsPage';
 
 function App() {
   return (
@@ -47,7 +47,7 @@ function App() {
         <Route path="/new-out-of-stock" element={<NewOutOfStockPage />} />
         <Route path="/used-out-of-stock" element={<UsedOutOfStockPage />} />
         <Route path="/out-of-stock" element={<OutOfStockPage />} />
-        <Route path="/terms" element={<Terms />} />
+        <Route path="/terms" element={<TermsPage />} />
       </Routes>
     </BrowserRouter>
   );
