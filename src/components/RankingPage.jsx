@@ -138,10 +138,10 @@ const RankingPage = () => {
 
   // ボタンを表示すべき位置かどうかをチェック
   const shouldShowButton = (index) => {
-    // index 49 (50件目と51件目の間) にボタンを表示
-    if (index === 49) return true;
-    // それ以降は30件ごと (index 79, 109, ...) にボタンを表示
-    if (index > 49) return ((index - 49) % 30) === 0;
+    // index 50 (51件目の前) にボタンを表示
+    if (index === 50) return true;
+    // それ以降は30件ごと (index 80, 110, ...) にボタンを表示
+    if (index > 50) return ((index - 50) % 30) === 0;
     return false;
   };
 
@@ -176,10 +176,10 @@ const RankingPage = () => {
                 <div className="my-8 text-center">
                   <div className="border-t border-gray-300 my-4"></div>
                   <button
-                    onClick={() => handleLoadBatch(index + 1)}
+                    onClick={() => handleLoadBatch(index)}
                     className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
                   >
-                    {index + 2}件目から30件のグラフを読み込む
+                    {index + 1}件目から30件のグラフを読み込む
                   </button>
                 </div>
               )}
